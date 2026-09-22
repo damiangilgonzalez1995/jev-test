@@ -2,18 +2,78 @@
 
 Playground y blog en español para entender **Jev**, el modelo System One de [TypeSafe](https://typesafe.ai/blog/introducing-system-one-models-and-jev), comparándolo en directo con un LLM normal (`gpt-5-nano`).
 
+![Resultados: Jev frente a gpt-5-nano](docs/screenshots/04-resultados.png)
+
 - **Playground (`/`)**: eliges un ejemplo, defines las preguntas y ves cómo responden los dos modelos: tiempo, tokens, coste y la respuesta de cada uno lado a lado.
 - **Blog (`/blog`)**: explicación para no técnicos, con diagramas y animaciones.
 
-## ¿Qué es Jev en una frase?
+---
 
-Un modelo que **no escribe texto: decide**. Le das una situación (`state`) y unas preguntas con respuestas cerradas (`questions`), y devuelve probabilidades calibradas para todas a la vez en una sola pasada.
+## ¿Qué es Jev?
+
+Un modelo que **no escribe texto: decide**. Le das una situación (`state`) y unas preguntas con respuestas cerradas (`questions`), y devuelve probabilidades calibradas para todas **a la vez, en una sola pasada**.
+
+```mermaid
+flowchart LR
+    subgraph LLM["LLM normal · escribe"]
+        direction LR
+        P[prompt] --> T1["{"] --> T2["&quot;spam&quot;:"] --> T3["true,"] --> T4["…"] --> T5["}"]
+    end
+    subgraph JEV["Jev · decide"]
+        direction LR
+        S[estado + preguntas] --> J((1 pasada))
+        J --> A["is_spam · sí 98%"]
+        J --> B["folder · spam 95%"]
+        J --> C["riesgo · alto 90%"]
+    end
+    T5 --> D{tu código}
+    A --> D
+    B --> D
+    C --> D
+```
+
+Un LLM construye la respuesta token a token: cada token necesita una pasada del modelo. Jev **puntúa las opciones que tú has definido**, todas en paralelo. Por eso diez preguntas cuestan casi lo mismo que una.
 
 | Tipo | Pregunta | Devuelve |
 | --- | --- | --- |
 | `noul` | ¿sí o no? | una probabilidad de 0 a 1 |
 | `choice` | ¿cuál de estas opciones? | la opción, la probabilidad de cada una y la confianza |
 | `score` | ¿cuánto, en esta escala? | la nota, la probabilidad de cada nivel y la confianza |
+
+---
+
+## El playground
+
+### 1. Elige un ejemplo y define tus preguntas
+
+Cada pregunta es una tarjeta plegable. Al abrirla cambias su nombre, su tipo, sus instrucciones y sus `criteria`; los campos se adaptan al tipo elegido.
+
+![Editor de preguntas](docs/screenshots/02-editor-preguntas.png)
+
+### 2. Pulsa Ejecutar y mira la carrera
+
+Jev termina casi al instante. GPT escribe su JSON **en directo** (streaming real, no simulado).
+
+![Carrera en directo](docs/screenshots/03-carrera-en-directo.png)
+
+### 3. Compara respuestas, tiempos y costes
+
+Una tarjeta por pregunta, con Jev a la izquierda, GPT a la derecha y si coinciden. Arriba, la tabla con tiempo, tokens, coste por llamada y coste por un millón de llamadas.
+
+![Resultados](docs/screenshots/04-resultados.png)
+
+---
+
+## El blog
+
+Explicación paso a paso pensada para gente no técnica: Sistema 1 frente a Sistema 2, las tres primitivas, la arquitectura probable, Jev dentro de un agente y casos de uso.
+
+| | |
+| --- | --- |
+| ![Portada del blog](docs/screenshots/05-blog.png) | ![Animación LLM frente a Jev](docs/screenshots/06-blog-animacion.png) |
+| ![Arquitectura](docs/screenshots/07-blog-arquitectura.png) | ![Un único pase](docs/screenshots/08-blog-pase-unico.png) |
+
+---
 
 ## Puesta en marcha
 
@@ -35,25 +95,35 @@ Abre http://localhost:3000. Si ves otro puerto en la terminal, usa ese.
 
 Solo hace falta esa clave: el mismo AI Gateway sirve los dos modelos. La clave se queda en el servidor y nunca llega al navegador.
 
-## Cómo se usa
-
-1. **Elige un ejemplo** en la barra izquierda: spam, NVIDIA comprar/vender, guardarraíl de herramientas de un agente o triaje de tickets.
-2. **Revisa el estado**: es el texto o JSON que leen los modelos. Ábrelo para editarlo o cambia a otra muestra.
-3. **Configura las preguntas**: abre cualquiera para cambiar su nombre, su tipo, sus instrucciones y sus `criteria`. También puedes añadir o borrar preguntas.
-4. **Pulsa Ejecutar** (o Ctrl + Enter):
-   - **Carrera en directo**: Jev responde todo a la vez; GPT escribe su JSON token a token, en streaming real.
-   - **Respuestas**: una tarjeta por pregunta, con Jev a la izquierda, GPT a la derecha y si coinciden.
-   - **Métricas**: tiempo, tokens, coste por llamada y por un millón de llamadas.
+---
 
 ## Cómo funciona por dentro
 
-```
-Navegador ──► /api/jev ─────► Vercel AI Gateway ──► Jev (typesafe-ai/jev)
-          └─► /api/compare ─► Vercel AI Gateway ──► gpt-5-nano (streaming, salida estructurada)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant N as Navegador
+    participant J as /api/jev
+    participant C as /api/compare
+    participant G as Vercel AI Gateway
+
+    N->>J: estado + preguntas
+    N->>C: estado + preguntas (en paralelo)
+    J->>G: typesafe-ai/jev
+    C->>G: openai/gpt-5-nano · JSON Schema · stream
+    G-->>J: probabilidades (~0,5 s)
+    J-->>N: respuestas de Jev
+    loop cada token
+        G-->>C: trozo del JSON
+        C-->>N: trozo del JSON (se ve en directo)
+    end
+    C-->>N: resultado final · tokens · coste
 ```
 
 - **Jev** recibe el `state` y las `questions` tal cual.
-- **gpt-5-nano** recibe lo mismo convertido en prompt y en JSON Schema estricto, así que devuelve la misma forma de respuesta que Jev. El razonamiento está desactivado (`reasoning_effort: "minimal"`).
+- **gpt-5-nano** recibe lo mismo convertido en prompt y en JSON Schema estricto, así que devuelve la misma forma de respuesta que Jev. El razonamiento está desactivado (`reasoning_effort: "minimal"`) para que empiece a escribir enseguida.
+
+---
 
 ## Estructura
 
@@ -70,12 +140,13 @@ src/
     QuestionEditor.tsx    tarjetas plegables noul / choice / score
     LiveRace.tsx          carrera animada y métricas
     ResultsPanel.tsx      respuestas de ambos modelos lado a lado
-    RaceAnimation.tsx     animación del blog (LLM vs Jev)
+    RaceAnimation.tsx     animación del blog (LLM frente a Jev)
   lib/
     examples.ts           ejemplos y su regla de decisión (decide)
     compare.ts            modelo de comparación, precios, esquema y prompt
     providers.ts          endpoint y modelo de Jev
     types.ts              tipos de la API de Jev
+docs/screenshots/         capturas de este README
 ```
 
 ## Personalizar

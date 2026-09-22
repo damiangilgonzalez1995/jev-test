@@ -102,8 +102,8 @@ function Lane({
           <div className={`text-sm font-semibold ${color}`}>{title}</div>
           <div className="text-[12px] text-fg-dim">{subtitle}</div>
         </div>
-        <div className="text-right">
-          <div className={`font-mono text-2xl tabular-nums ${state ? "text-fg" : color}`}>{fmtMs(elapsed)}</div>
+        <div className="shrink-0 text-right">
+          <div className={`whitespace-nowrap font-mono text-2xl tabular-nums ${state ? "text-fg" : color}`}>{fmtMs(elapsed)}</div>
           <div className="text-[12px] text-fg-dim">
             {state === "error" ? <span className="text-bad">error</span> : state ? "✓ terminado" : <span className="pulse">● pensando</span>}
           </div>

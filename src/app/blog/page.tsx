@@ -241,7 +241,7 @@ function AppFlow() {
 function ForwardPasses() {
   const toks = ["{", '"urgent":', "true,", '"team":', '"eng"', "}"];
   return (
-    <svg viewBox="0 0 800 330" className="w-full min-w-[680px]" role="img" aria-label="Varios pases autorregresivos frente a un único pase con salidas por pregunta">
+    <svg viewBox="0 0 830 330" className="w-full min-w-[680px]" role="img" aria-label="Varios pases autorregresivos frente a un único pase con salidas por pregunta">
       <Defs />
       <text x={20} y={26} fill={C.info} fontSize={13} fontWeight={700}>LLM · un pase del modelo por token</text>
       {toks.map((t, i) => (
@@ -252,7 +252,7 @@ function ForwardPasses() {
           <text x={196} y={62 + i * 44} fill={C.fg} fontSize={12} fontFamily="monospace">{t}</text>
         </g>
       ))}
-      <text x={20} y={318} fill={C.muted} fontSize={11}>cada token vuelve a entrar como contexto → secuencial</text>
+      <text x={20} y={318} fill={C.muted} fontSize={11}>cada token vuelve a entrar → secuencial</text>
 
       <line x1={330} y1={20} x2={330} y2={320} stroke={C.border} strokeDasharray="4 6" />
 
@@ -273,7 +273,7 @@ function ForwardPasses() {
           <text x={768} y={o.y + 20} fill={C.ok} fontSize={11}>{o.p}</text>
         </g>
       ))}
-      <text x={360} y={318} fill={C.muted} fontSize={11}>puntúa opciones cerradas en paralelo → sin bucle de generación</text>
+      <text x={360} y={318} fill={C.muted} fontSize={11}>puntúa opciones cerradas a la vez → sin bucle</text>
     </svg>
   );
 }
