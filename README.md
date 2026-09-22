@@ -17,16 +17,16 @@ Un modelo que **no escribe texto: decide**. Le das una situación (`state`) y un
 flowchart LR
     subgraph LLM["LLM normal · escribe"]
         direction LR
-        P[prompt] --> T1["{"] --> T2["&quot;spam&quot;:"] --> T3["true,"] --> T4["…"] --> T5["}"]
+        P["prompt"] --> T1["token 1: {"] --> T2["token 2: spam:"] --> T3["token 3: true,"] --> T4["..."] --> T5["token N: }"]
     end
     subgraph JEV["Jev · decide"]
         direction LR
-        S[estado + preguntas] --> J((1 pasada))
+        S["estado + preguntas"] --> J(("1 pasada"))
         J --> A["is_spam · sí 98%"]
         J --> B["folder · spam 95%"]
         J --> C["riesgo · alto 90%"]
     end
-    T5 --> D{tu código}
+    T5 --> D{"tu código"}
     A --> D
     B --> D
     C --> D
